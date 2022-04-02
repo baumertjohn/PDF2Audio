@@ -6,6 +6,11 @@
 # https://cloud.google.com/text-to-speech/docs/basics
 # https://aws.amazon.com/polly/
 
+# Possible free solutions
+# pip install gtts
+# http://www.voicerss.org/login.aspx
+
+
 # Import PDF 2 Text
 
 # Define API for conversion
