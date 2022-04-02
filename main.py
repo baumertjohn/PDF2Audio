@@ -10,46 +10,59 @@
 # pip install gtts
 # http://www.voicerss.org/login.aspx
 
-
-# Import PDF 2 Text
-import pdftotext
 import sys
+from io import StringIO
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser, PDFSyntaxError
 
 # Define API for conversion
 # API URL GOES HERE
 
 
-def open_PDF():
+def open_file():
     """Check for a filename added at command line
     or ask the user to enter a filename."""
     # Check for command line input
     try:
-        cl_input = sys.argv[1]
-        with open(cl_input, "rb") as file:
-            pdf = pdftotext.PDF(file)
-            return pdf
+        cl_argument = sys.argv[1]
+        extracted_text = convert_pdf_to_string(cl_argument)
+        return extracted_text
     except IndexError:  # No argument at command line
         pass
-    except (FileNotFoundError, pdftotext.Error):
-        print("\nFile add at command line not found or not a valid PDF.\n")
+    except (FileNotFoundError, PDFSyntaxError):
+        print("\nFile added at command line not found or not a valid PDF.\n")
 
     # If no command line input ask user for input
     while True:
-        work_file = input("What is the file you want to convert?\n> ")
+        input_file = input("What is the file you want to convert?\n> ")
         try:
-            with open(work_file, "rb") as file:
-                pdf = pdftotext.PDF(file)
-                return pdf
-        except (FileNotFoundError, pdftotext.Error):
+            extracted_text = convert_pdf_to_string(input_file)
+            return extracted_text
+        except (FileNotFoundError, PDFSyntaxError):
             print("\nFile not found or not valid, try again.\n")
 
 
-pdf = open_PDF()
+def convert_pdf_to_string(file_path):
+    """Parse PDF and return text as string"""
+    output_string = StringIO()
+    with open(file_path, "rb") as in_file:
+        parser = PDFParser(in_file)
+        doc = PDFDocument(parser)
+        rsrcmgr = PDFResourceManager()
+        device = TextConverter(rsrcmgr, output_string, laparams=LAParams())
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        for page in PDFPage.create_pages(doc):
+            interpreter.process_page(page)
+    return output_string.getvalue()
 
-# Parse file through PDF To Text
-text_to_convert = f"".join(pdf)
 
-print(text_to_convert)
+pdf = open_file()
+
+print(pdf)
 
 
 # Submit file to online API for conversion
