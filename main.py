@@ -10,17 +10,24 @@
 # pip install gtts
 # http://www.voicerss.org/login.aspx
 
+import os
 import sys
 from io import StringIO
+
+import requests
+from dotenv import load_dotenv
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfdocument import PDFDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser, PDFSyntaxError
+from playsound import playsound
 
 # Define API for conversion
-# API URL GOES HERE
+load_dotenv()
+API_KEY = os.getenv("VOICE_RSS_KEY")
+VOICE_ENDPOINT = "http://api.voicerss.org/?"
 
 
 def open_file():
@@ -60,11 +67,31 @@ def convert_pdf_to_string(file_path):
     return output_string.getvalue()
 
 
-pdf = open_file()
+def main():
+    """Open a PDF file, parse text, and playback audio of text. File can be
+    command line argument or entered from prompt."""
+    pdf_text = open_file()
+    # Change 'new line' to 'space' for reading continuity
+    pdf_text = pdf_text.replace("\n", " ")
+    pdf_text = pdf_text.replace("&", " and ")  # Remove amperstands to avoid URL errors
+    pdf_text = pdf_text[:1940]  # Max length of characters excepted by voicerss.org
 
-print(pdf)
+    # user_text = "Hello my name is John"
+    voice_params = {
+        "key": API_KEY,
+        "hl": "en-us",
+        "src": pdf_text,
+    }
+
+    # Submit file to online API for conversion
+    voice_audio = requests.get(url=VOICE_ENDPOINT, params=voice_params)
+    voice_audio.raise_for_status()
+    with open("./voice_audio.wav", "wb") as file:
+        file.write(voice_audio.content)
+
+    # Save or play audio returned
+    playsound("./voice_audio.wav")
 
 
-# Submit file to online API for conversion
-
-# Save or play audio returned
+if __name__ == "__main__":
+    main()
